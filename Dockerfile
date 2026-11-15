@@ -14,7 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PORT=8000 PYTHONUNBUFFERED=1
-EXPOSE 8000
+# hosts that assign their own port (e.g. Hugging Face Spaces: 7860) override this at runtime
+EXPOSE 8000 7860
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=3)" || exit 1

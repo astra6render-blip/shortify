@@ -1,3 +1,14 @@
+---
+title: Shortify
+emoji: ✂️
+colorFrom: purple
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # Shortify — paste a YouTube link, get editable Shorts, render up to 4K
 
 A complete, self-contained web app: a marketing landing page, a live
