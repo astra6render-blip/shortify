@@ -90,42 +90,54 @@ Bandwidth: 100 GB/mo included on paid plans, then $0.15/GB. A workspace plan
 
 ### The alternatives, same job
 
-| Host | RAM | Price | 4K@120? |
-| --- | --- | --- | --- |
-| **Hugging Face Spaces** | **16 GB / 2 vCPU** | **$0** | ✅ yes — free, no card |
-| Hetzner CX22 VPS | 4 GB / 2 vCPU | ~€4/mo (~$4.30) | ✅ yes |
-| Railway Hobby | usage-based | ~$5/mo + usage | ✅ |
+| Host | RAM | Price | Card? | 4K@120? |
+| --- | --- | --- | --- | --- |
+| Hetzner CX22 VPS | 4 GB / 2 vCPU | ~€4/mo (~$4.30) | ✅ yes | ✅ yes |
+| Oracle Cloud **Always Free** (A1.Flex) | **24 GB / 4 OCPU** | **$0 forever** | ✅ for verification only | ✅ yes |
+| Railway Hobby | usage-based | ~$5/mo + usage | ✅ yes | ✅ |
+| Hugging Face Spaces (Docker) | 16 GB / 2 vCPU | **$9/mo PRO** | ✅ yes | ✅ yes |
 
----
+> ⚠️ **Correction:** earlier versions of this file said HF Spaces Docker was $0.
+> That was wrong. Hugging Face now requires a **PRO plan ($9/mo)** to *create*
+> any Gradio or Docker Space — only static HTML Spaces are free. The 16 GB
+> CPU Basic hardware costs $0/hr, but you cannot deploy a Docker Space onto it
+> without PRO. Also: **custom domains need PRO or higher**, so on the free tier
+> you get `*.hf.space` only.
 
 ## 3. Real yearly totals
 
 | Setup | Year 1 | Year 2+ | Works? |
 | --- | --- | --- | --- |
-| **HF Spaces (free) + .com** | **~$11** | ~$11 | ✅ full 18/18 incl. 4K@120 |
-| **Hetzner VPS + .com** | ~$63 | ~$63 | ✅ full, fastest, own domain |
+| **Oracle Cloud Always Free + .com** | **~$11** | **~$11** | ✅ full 18/18 incl. 4K@120 — 24 GB RAM |
+| **HF Spaces PRO + .com** | ~$119 | ~$119 | ✅ full, zero maintenance |
+| **Hetzner CX22 + .com** | ~$63 | ~$63 | ✅ full, fastest |
 | Render Standard + .com | ~$311 | ~$311 | ⚠️ no 4K interpolation |
 | Render Pro + .com | ~$1,031 | ~$1,031 | ✅ full — expensive |
 
 ### Recommendation
 
-**HF Spaces + `shortifyvideo.com` ≈ $11/year total.** Zero hosting cost, 16 GB
-RAM handles every combination, and the domain is the only real expense.
+**Oracle Cloud Always Free + `shortifyvideo.com` ≈ $11/year total.** 4 OCPUs and
+24 GB RAM at zero cost, permanently — more RAM than Render's $85/mo Pro plan.
+The card is only for identity verification and is never charged while you stay
+inside the Always Free limits (set a budget alert anyway). Caveats: it's ARM
+(our Dockerfile is arch-neutral `python:3.12-slim`, and ffmpeg + the
+`imageio-ffmpeg` aarch64 wheel both support ARM64), and A1 capacity can be
+temporarily unavailable in some regions — retry or pick another region.
 
-If you want a proper production setup, **Hetzner CX22 + the .com ≈ $63/year** —
-roughly 1/5 the price of Render Pro for the same capability and better
-performance.
+**HF Spaces PRO ($9/mo) + .com ≈ $119/year** if you'd rather not run a server.
+Zero maintenance, 16 GB RAM, deploys by `git push`. That $9 buys managed
+hosting and a custom domain, not the RAM.
 
-Render Pro at **$85/mo ($1,020/yr)** only makes sense if you want managed
-infrastructure and no server maintenance. For a single app, it's the most
-expensive way to run this.
+**Hetzner CX22 + .com ≈ $63/year** sits between the two: a real x86 server you
+control, cheaper than PRO.
 
 ---
 
 ## 4. Order of operations
 
 1. Buy the domain at Porkbun or Cloudflare — **~$11**. (Needs your card.)
-2. Deploy to HF Spaces — **free**, one command: `HF_TOKEN=hf_xxx ./deploy-hf.sh`
+2. Deploy somewhere that can actually run it — Oracle Always Free (free forever),
+   HF Spaces ($9/mo PRO, one command: `HF_TOKEN=hf_xxx ./deploy-hf.sh`), or a VPS.
 3. Point the domain's `CNAME` at the host, add it in the host's dashboard so TLS
    is issued automatically.
 4. Swap the placeholder domain in the repo:
