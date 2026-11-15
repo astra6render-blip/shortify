@@ -86,6 +86,41 @@ def video_meta_cached(vid: str, wait: float = 18.0):
             "note": "still reading the link — retry in a moment"}
 
 
+def _cookie_file():
+    """Path to a Netscape cookies.txt, from YT_COOKIES or base64 YT_COOKIES_B64.
+
+    Cookies make YouTube treat us as a signed-in browser, which is the only
+    reliable way past datacenter-IP bot checks (Render, Fly, most clouds).
+    """
+    ck = (os.environ.get("YT_COOKIES") or "").strip()
+    if ck and os.path.exists(ck):
+        return ck
+    b64 = (os.environ.get("YT_COOKIES_B64") or "").strip()
+    if b64:
+        try:
+            import base64
+            import tempfile
+            raw = base64.b64decode(b64)
+            # cache it once per process
+            global _COOKIE_PATH
+            try:
+                if _COOKIE_PATH and os.path.exists(_COOKIE_PATH):
+                    return _COOKIE_PATH
+            except NameError:
+                pass
+            fd, path = tempfile.mkstemp(suffix=".txt", prefix="ytck-")
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(raw)
+            _COOKIE_PATH = path
+            return path
+        except Exception:
+            return ""
+    return ""
+
+
+_COOKIE_PATH = ""
+
+
 def video_meta(vid: str):
     """Fetch public metadata with yt-dlp (no downloads)."""
     try:
@@ -96,11 +131,16 @@ def video_meta(vid: str):
     # YouTube rotates which player clients still work, per IP. Try several —
     # "Failed to extract any player response" on one client does not mean the
     # IP is blocked (verified: youtube.com/generate_204 returns 204 fine).
-    attempts = [
-        {"player_client": ["android"]},
-        {"player_client": ["tv_embedded"], "player_skip": ["webpage", "configs"]},
-        {"player_client": ["android"], "player_skip": ["webpage", "configs"]},
-    ]
+    # With cookies, the normal web client works — no client juggling needed.
+    cookie_file = _cookie_file()
+    if cookie_file:
+        attempts = [None]
+    else:
+        attempts = [
+            {"player_client": ["android"]},
+            {"player_client": ["tv_embedded"], "player_skip": ["webpage", "configs"]},
+            {"player_client": ["android"], "player_skip": ["webpage", "configs"]},
+        ]
     # a proxied host cuts the connection at ~100s, so keep the whole thing short
     deadline = time.time() + 45
     info = None
@@ -115,8 +155,11 @@ def video_meta(vid: str):
             "noplaylist": True,
             "socket_timeout": 10,
             "retries": 0,
-            "extractor_args": {"youtube": attempt},
         }
+        if attempt is None:
+            opts["cookiefile"] = cookie_file
+        else:
+            opts["extractor_args"] = {"youtube": attempt}
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(f"https://www.youtube.com/watch?v={vid}",
