@@ -44,6 +44,48 @@ DEMO_META = {
 YT_ID = re.compile(r"^[\w-]{6,32}$")
 
 
+# yt-dlp is slow on small instances; a proxied host kills the request long
+# before it finishes. Fetch once in the background and serve from cache.
+_META_CACHE = {}          # vid -> (ts, payload)
+_META_EVENTS = {}         # vid -> threading.Event
+_META_LOCK = threading.Lock()
+_META_TTL = 1800
+
+
+def video_meta_cached(vid: str, wait: float = 18.0):
+    """Return cached metadata, or kick off a background fetch and wait briefly."""
+    now = time.time()
+    hit = _META_CACHE.get(vid)
+    if hit and now - hit[0] < _META_TTL:
+        return hit[1]
+
+    with _META_LOCK:
+        ev = _META_EVENTS.get(vid)
+        if ev is None:
+            ev = threading.Event()
+            _META_EVENTS[vid] = ev
+
+            def _work():
+                try:
+                    payload = video_meta(vid)
+                except Exception as exc:
+                    payload = dict(DEMO_META, id=vid, demo=True,
+                                   note=f"metadata failed ({type(exc).__name__})")
+                with _META_LOCK:
+                    _META_CACHE[vid] = (time.time(), payload)
+                    _META_EVENTS.pop(vid, None)
+                ev.set()
+
+            threading.Thread(target=_work, daemon=True).start()
+
+    ev.wait(timeout=max(1.0, wait))
+    hit = _META_CACHE.get(vid)
+    if hit:
+        return hit[1]
+    return {"pending": True, "id": vid,
+            "note": "still reading the link — retry in a moment"}
+
+
 def video_meta(vid: str):
     """Fetch public metadata with yt-dlp (no downloads)."""
     try:
@@ -167,7 +209,7 @@ class Handler(SimpleHTTPRequestHandler):
             if not YT_ID.match(vid):
                 self._json({"error": "invalid id"}, status=400)
                 return
-            self._json(video_meta(vid))
+            self._json(video_meta_cached(vid, wait=18.0))
             return
 
         m = re.match(r"^/api/render/([0-9a-f]{6,32})$", path)
