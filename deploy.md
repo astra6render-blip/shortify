@@ -212,3 +212,41 @@ It never serves a truncated MP4.
 | --- | --- | --- |
 | `PORT` | `8000` | HTTP port |
 | `SHORTIFY_SOURCE_CACHE` | `renders/.sources` | where downloaded link sources are cached |
+
+---
+
+## Why real YouTube links fail on some hosts
+
+`yt-dlp` downloads the video server-side. YouTube increasingly refuses cloud
+IP ranges, so a link that works on your laptop can fail on a hosting provider.
+
+**Measured on 2026-11-15:**
+
+| Where | YouTube metadata | Download |
+| --- | --- | --- |
+| Google Cloud (this dev sandbox) | ✅ works | ✅ works |
+| Render, **Singapore** region | ❌ blocked | ❌ blocked |
+| Home connection / normal VPS | ✅ works | ✅ works |
+
+It is not "all datacenters" — it is per-provider and per-region IP reputation.
+
+### Three ways to fix it
+
+1. **Move the service to another region.** Render → Settings → Region. Try
+   Frankfurt or Oregon before assuming it's hopeless; Singapore egress is
+   heavily used by scrapers.
+2. **Supply cookies** (works even on blocked IPs). On your machine:
+   ```bash
+   yt-dlp --cookies-from-browser chrome --cookies yt.txt \
+          "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --skip-download
+   base64 -w0 yt.txt
+   ```
+   Then in Render → Environment → add `YT_COOKIES_B64` with that base64 string
+   (or mount the file and set `YT_COOKIES=/path/yt.txt`). Rebuild.
+   Cookies expire after a few weeks — refresh them when uploads start failing.
+3. **Self-host** on a home connection or a VPS with residential-grade egress.
+   Everything works with no extra configuration.
+
+The UI never lies about it: if the server cannot read the link, you get a warning
+toast, the analyzing badge reads **"LINK BLOCKED · DEMO"**, and the export source
+row says so too.

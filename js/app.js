@@ -87,8 +87,9 @@
       if (source.liveFailed) {
         toast(
           'Could not read that YouTube video',
-          'This server’s network is blocked by YouTube, so the demo reel loads instead. ' +
-          'Your timeline and effects still work — press Render to export.',
+          'YouTube blocks this server’s IP, so the demo reel loads instead. ' +
+          'Timeline and effects still work. To cut real videos, deploy where YouTube ' +
+          'allows access (VPS/home) or set the YT_COOKIES variable.',
           'warn', 9000
         );
       }
