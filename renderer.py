@@ -122,10 +122,22 @@ def _real_source(state):
         opts["download_ranges"] = download_range_func(None, [(max(0, start - pad), end + pad)])
     except Exception:
         pass
-    try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.download([f"https://www.youtube.com/watch?v={vid}"])
-    except Exception as exc:
+    # Same per-IP client rotation as the metadata path: try several before
+    # concluding the network is blocked.
+    clients = (["android"], ["tv_embedded"], ["android_vr"], ["ios"], ["web_safari"])
+    last_exc = None
+    downloaded = False
+    for cl in clients:
+        opts["extractor_args"] = {"youtube": {"player_client": cl}}
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                ydl.download([f"https://www.youtube.com/watch?v={vid}"])
+            downloaded = True
+            break
+        except Exception as exc:
+            last_exc = exc
+    if not downloaded and last_exc is not None:
+        exc = last_exc
         raise RuntimeError(
             "YouTube refused this server. It blocks most cloud/datacenter IPs "
             "unless the request is signed in. Options: run Shortify on a home "

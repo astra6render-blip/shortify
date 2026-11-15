@@ -51,20 +51,39 @@ def video_meta(vid: str):
     except Exception:
         return dict(DEMO_META, id=vid, note="yt-dlp not installed; demo metadata")
 
-    # YouTube is picky: the web client demands auth from datacenter IPs, while
-    # android/android_vr often still work. Try a few before giving up.
-    opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "skip_download": True,
-        "noplaylist": True,
-        "socket_timeout": 15,
-        "retries": 1,
-        "extractor_args": {"youtube": {"player_client": ["android_vr", "android", "web_safari"]}},
-    }
+    # YouTube rotates which player clients still work, per IP. Try several —
+    # "Failed to extract any player response" on one client does not mean the
+    # IP is blocked (verified: youtube.com/generate_204 returns 204 fine).
+    attempts = [
+        {"player_client": ["android"]},
+        {"player_client": ["android"], "player_skip": ["webpage", "configs"]},
+        {"player_client": ["tv_embedded"], "player_skip": ["webpage", "configs"]},
+        {"player_client": ["android_vr"], "player_skip": ["webpage", "configs"]},
+        {"player_client": ["ios"]},
+    ]
+    info = None
+    last_exc = None
+    for attempt in attempts:
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "noplaylist": True,
+            "socket_timeout": 15,
+            "retries": 1,
+            "extractor_args": {"youtube": attempt},
+        }
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(f"https://www.youtube.com/watch?v={vid}",
+                                        download=False)
+            break
+        except Exception as exc:
+            last_exc = exc
+            info = None
+    if info is None:
+        raise last_exc if last_exc else RuntimeError("yt-dlp returned no metadata")
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(f"https://www.youtube.com/watch?v={vid}", download=False)
         thumbs = info.get("thumbnails") or []
         thumb = ""
         if thumbs:
