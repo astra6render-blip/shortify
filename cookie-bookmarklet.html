@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shortify · one-click YouTube connect</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{--bg:#0b0a12;--card:#15131f;--line:#2a2740;--ink:#eceaf6;--dim:#9b96b8;
+      --mint:#5ef2c0;--violet:#a78bfa;--warn:#ffcf5c;--bad:#ff6b8a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:15px/1.65 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:40px 22px 90px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.02em}
+.sub{color:var(--dim);margin:0 0 26px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+      padding:22px;margin:0 0 18px}
+.step{display:flex;gap:12px;align-items:flex-start;margin:0 0 12px}
+.num{flex:0 0 26px;height:26px;border-radius:50%;background:var(--violet);
+     color:#0b0a12;font-weight:700;font-size:13px;display:grid;place-items:center}
+h2{font-size:16px;margin:0 0 8px}
+ol{margin:8px 0 0 20px;padding:0}
+li{margin:8px 0}
+a.btn{display:inline-block;background:var(--violet);color:#0b0a12;text-decoration:none;
+  border-radius:11px;padding:13px 22px;font-weight:700;font-size:15px;margin-top:8px}
+a.btn:hover{filter:brightness(1.08)}
+.bm{display:inline-block;background:var(--mint);color:#0b0a12;padding:10px 16px;
+    border-radius:10px;font-weight:700;text-decoration:none;cursor:grab;
+    font-size:14px;margin:10px 0;border:2px dashed #0b0a12}
+.bm:active{cursor:grabbing}
+code{background:#0e0c16;border:1px solid var(--line);border-radius:6px;
+     padding:2px 6px;font-size:12.5px;word-break:break-all}
+.status{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;
+  border-radius:999px;background:#0e0c16;border:1px solid var(--line);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--bad)}
+.dot.ok{background:var(--mint)}
+.warn{border-color:var(--warn);background:#1a160c}
+.small{color:var(--dim);font-size:13px}
+textarea{width:100%;min-height:150px;background:#0e0c16;color:var(--ink);
+  border:1px solid var(--line);border-radius:12px;padding:14px;font:12px/1.5 ui-monospace,monospace}
+button{background:var(--violet);color:#0b0a12;border:0;border-radius:11px;
+  padding:13px 22px;font-weight:700;font-size:15px;cursor:pointer;margin-top:12px}
+.out{margin-top:14px;padding:14px;border-radius:12px;background:#0e0c16;
+     border:1px solid var(--line);font:13px/1.5 ui-monospace,monospace;
+     white-space:pre-wrap;display:none}
+.out.show{display:block}
+.out.ok{border-color:var(--mint);color:var(--mint)}
+.out.bad{border-color:var(--bad);color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>One-click YouTube connect</h1>
+  <p class="sub">Grab your full cookie jar from the YouTube tab — including the
+     HttpOnly sign-in cookies that <code>document.cookie</code> can't see.</p>
+
+  <div class="card">
+    <div class="status"><span class="dot" id="dot"></span><span id="state">checking…</span></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">1</span><div>
+      <h2>Drag this button to your bookmarks bar</h2>
+      <p class="small" style="margin:0 0 4px">If the bar is hidden: <code>Ctrl/Cmd+Shift+B</code></p>
+      <a class="bm" id="bm" href="#">Send cookies to Shortify</a>
+      <p class="small" style="margin:8px 0 0">No bookmarks bar (phone/tablet)?
+         Use the manual box in step 3 instead.</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">2</span><div>
+      <h2>Open YouTube, sign in, click the bookmark</h2>
+      <ol>
+        <li>Open <a href="https://www.youtube.com" target="_blank" rel="noopener"
+             style="color:var(--violet)">youtube.com</a> in the <b>same browser</b> and sign in.</li>
+        <li>Click the <b>Send cookies to Shortify</b> bookmark you just saved.</li>
+        <li>It sends your cookie jar to this page and returns here.</li>
+      </ol>
+      <p class="small">Nothing is stored on YouTube. The bookmark only reads cookies
+         from your own browser and posts them to your own Shortify server.</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">3</span><div>
+      <h2>Or paste a cookies.txt file</h2>
+      <p class="small" style="margin:0 0 8px">
+        Install the extension <b>“Get cookies.txt LOCALLY”</b>, export from
+        youtube.com, open the file and paste everything here.</p>
+      <textarea id="jar" placeholder="# Netscape HTTP Cookie File&#10;.youtube.com  TRUE  /  TRUE  ..."></textarea>
+      <button id="save">Save cookies</button>
+      <div class="out" id="result"></div>
+    </div></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const TOKEN = (location.search.match(/[?&]key=([^&]+)/) || [])[1] || '';
+
+/* The bookmarklet: reads every cookie the browser will reveal on youtube.com,
+   base64s it, and hand-delivers it to this page. document.cookie cannot read
+   HttpOnly cookies, so we also offer the cookies.txt route for full fidelity. */
+const BM_JS = `(function(){
+var jar=document.cookie||'';
+if(!jar){alert('No cookies found. Sign in to YouTube first.');return;}
+var b=btoa(unescape(encodeURIComponent(jar)));
+location.href='${location.origin}/cookie-bookmarklet.html?key=${encodeURIComponent(TOKEN)}#jar='+encodeURIComponent(b);
+})();`;
+$('#bm').setAttribute('href', 'javascript:' + BM_JS.replace(/\s+/g, ' '));
+
+async function refresh(){
+  try{
+    const j = await (await fetch('/api/yt-status')).json();
+    const n = j.cookies_count || 0;
+    $('#dot').classList.toggle('ok', n > 0);
+    $('#state').textContent = n>0 ? `Connected · ${n} YouTube cookies` : 'Not connected yet';
+  }catch(e){ $('#state').textContent='could not reach the server'; }
+}
+
+function say(cls,msg){
+  const o=$('#result'); o.className='out show '+cls; o.textContent=msg;
+}
+
+async function post(cookies){
+  $('#save').disabled = true; say('ok','Saving…');
+  try{
+    const r = await fetch('/api/set-cookies',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:TOKEN,cookies})});
+    const j = await r.json();
+    if(j.ok){ say('ok',`Saved ${j.count} YouTube cookies.`); refresh(); }
+    else { say('bad', j.message || 'no cookies found in that text'); }
+  }catch(e){ say('bad','could not reach the server: '+e.message); }
+  finally{ $('#save').disabled=false; }
+}
+
+/* bookmarklet handoff */
+if(location.hash.startsWith('#jar=')){
+  try{
+    const raw = decodeURIComponent(location.hash.slice(5));
+    const txt = decodeURIComponent(escape(atob(raw)));
+    history.replaceState(null,'','?key='+encodeURIComponent(TOKEN));
+    post(txt);
+  }catch(e){ say('bad','could not read the bookmarklet payload'); }
+}
+
+$('#save').addEventListener('click', ()=>{
+  const v = $('#jar').value.trim();
+  if(!v){ say('bad','Paste the cookie text first.'); return; }
+  post(v);
+});
+
+refresh(); setInterval(refresh,5000);
+</script>
+</body>
+</html>

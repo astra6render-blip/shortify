@@ -334,6 +334,22 @@ class Handler(SimpleHTTPRequestHandler):
             })
             return
 
+        if path in ("/cookie-setup", "/cookie-bookmarklet.html"):
+            page = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.path.basename(path))
+            try:
+                with open(page, "rb") as fh:
+                    body = fh.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception:
+                self._json({"error": "page missing"}, status=404)
+            return
+
         if path == "/cookie-setup":
             page = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "cookie-setup.html")
