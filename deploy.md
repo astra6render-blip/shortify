@@ -1,10 +1,95 @@
-# Deploy Shortify to your own domain (e.g. `shortify.com`)
+# Deploying Shortify
 
-This app is a **single Python process** (`server.py`) that serves the static
-site, the metadata API and the ffmpeg renderer. Any host that can run a
-container or a Python process works.
+The app is written. The repo is live at
+**https://github.com/astra6render-blip/shortify** (public, Docker-ready).
+
+What remains is account-side work that only you can do: adding a payment card and
+buying a domain. Everything that can be automated already has been.
 
 ---
+
+## Status right now
+
+| Step | State |
+| --- | --- |
+| Code complete (1080p→4K, 30/60/120 fps, real ffmpeg) | ✅ done |
+| GitHub repo pushed and public | ✅ done |
+| `Dockerfile`, `render.yaml`, ENV-configurable `PORT` | ✅ done |
+| Render workspace provisioned | ⛔ blocked — card required |
+| Domain purchased | ⛔ blocked — needs payment |
+
+---
+
+## Option A — Render (needs a card on file)
+
+Render refused every resource on the `astra6render` workspace with
+`Payment information is required`, including free-tier static sites.
+
+1. Add a card: <https://dashboard.render.com/billing>
+2. Blueprints → **New Blueprint Instance** → pick `astra6render-blip/shortify`
+   Render reads `render.yaml` and creates the service (Docker, healthcheck,
+   `/api/health`, 1 GB disk for renders).
+3. Wait for the build (~3–5 min; the image installs ffmpeg).
+4. Your URL is `https://shortify.onrender.com`.
+
+> Free plan = 512 MB RAM, spins down after 15 min idle. That is below what the
+> renderer needs for 1080p/120fps (~775 MB). Use **Starter (2 GB)** or larger for
+> real rendering; the app detects the RAM and disables combos it cannot finish
+> instead of failing.
+
+## Option B — Hugging Face Spaces (free, **no card**)
+
+This repo already carries the required front-matter (`sdk: docker`,
+`app_port: 7860`).
+
+1. Create a token: <https://huggingface.co/settings/tokens> (write scope)
+2. Then:
+   ```bash
+   HF_TOKEN=hf_xxx ./deploy-hf.sh
+   ```
+3. The Space builds from the Dockerfile and serves at
+   `https://<user>-shortify.hf.space`.
+
+Free Spaces give 16 GB RAM / 2 vCPU — enough for **every** combination including
+4K at 120 fps with interpolation. It sleeps after 48 h idle.
+
+## Option C — Your own VPS (best performance per dollar)
+
+```bash
+git clone https://github.com/astra6render-blip/shortify.git
+cd shortify
+docker build -t shortify .
+docker run -d --name shortify -p 80:8000 -v "$PWD/renders:/app/renders" \
+  --restart unless-stopped shortify
+```
+
+Hetzner CX22 (~€4/mo, 2 vCPU / 4 GB) handles 4K/60 and 1080p/120 interpolated.
+
+---
+
+## Making it findable on the web
+
+1. Buy the domain. **`shortify.com` is already taken** — check
+   `shortify.app`, `shortify.studio`, `shortify.video`, `getshortify.com`.
+2. Point a `CNAME` record (or an `A` record for a VPS) at the host.
+3. Add the domain in the host's dashboard so TLS is issued.
+4. Replace the placeholder domain everywhere:
+   ```bash
+   grep -rl "shortify.com" index.html robots.txt sitemap.xml deploy.md \
+     | xargs sed -i 's/shortify\.com/yourdomain.com/g'
+   git commit -am "Use the real domain" && git push
+   ```
+5. Submit the sitemap:
+   - Google: <https://search.google.com/search-console> → Sitemaps → `sitemap.xml`
+   - Bing: <https://www.bing.com/webmasters> → same
+6. Expect **days to weeks** before the site ranks. The structured data
+   (`WebApplication` + `FAQPage` JSON-LD) makes it eligible for rich results,
+   but indexing is Google's decision, not something the code can force.
+
+
+---
+
+## Reference
 
 ## 1. Buy the domain
 Register `shortify.com` (or any name) at Cloudflare Registrar, Namecheap,
