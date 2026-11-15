@@ -1,0 +1,6 @@
+.git
+__pycache__
+*.pyc
+renders/*.mp4
+renders/.sources
+shortify-updates.patch
