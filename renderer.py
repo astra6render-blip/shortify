@@ -126,7 +126,36 @@ _jobs_lock = threading.Lock()
 _encode_lock = threading.Lock()
 
 
+def _cgroup_mb(kind):
+    """Container limits. /proc/meminfo shows the HOST's RAM, not the container's,
+    so on Render/Fly/K8s a 512 MB instance still reports 31 GB. Read the cgroup
+    instead — v2 first (limit is "max" when unlimited), then v1."""
+    paths = {
+        "total": ("/sys/fs/cgroup/memory.max",
+                  "/sys/fs/cgroup/memory/memory.limit_in_bytes"),
+        "used": ("/sys/fs/cgroup/memory.current",
+                 "/sys/fs/cgroup/memory/memory.usage_in_bytes"),
+    }
+    for path in paths[kind]:
+        try:
+            with open(path) as fh:
+                raw = fh.read().strip()
+            if raw in ("max", ""):
+                continue
+            val = int(raw)
+            if val <= 0 or val >= (1 << 62):      # unlimited / absurd
+                continue
+            return val // (1024 * 1024)
+        except Exception:
+            continue
+    return None
+
+
 def _mem_available_mb():
+    limit = _cgroup_mb("total")
+    used = _cgroup_mb("used")
+    if limit is not None and used is not None:
+        return max(0, limit - used)
     try:
         with open("/proc/meminfo") as fh:
             for line in fh:
@@ -138,6 +167,9 @@ def _mem_available_mb():
 
 
 def _mem_total_mb():
+    limit = _cgroup_mb("total")
+    if limit is not None:
+        return limit
     try:
         with open("/proc/meminfo") as fh:
             for line in fh:
