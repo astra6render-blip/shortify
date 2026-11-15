@@ -271,6 +271,29 @@ class Handler(SimpleHTTPRequestHandler):
                 out["cookie_error"] = f"{type(exc).__name__}: {exc}"[:200]
             out["env_keys"] = sorted(
                 k for k in os.environ if "YT_" in k or "COOKIE" in k.upper())
+            # why is parsing failing? report the shape without leaking secrets
+            b64 = (os.environ.get("YT_COOKIES_B64") or "").strip()
+            raw = (os.environ.get("YT_COOKIES") or "").strip()
+            if b64:
+                import base64 as _b
+                out["b64_length"] = len(b64)
+                out["b64_has_newlines"] = "\n" in b64
+                out["b64_has_spaces"] = " " in b64
+                out["b64_prefix"] = b64[:16]
+                try:
+                    dec = _b.b64decode(b64 + "=" * (-len(b64) % 4))
+                    out["decoded_bytes"] = len(dec)
+                    txt = dec.decode("utf-8", "replace")
+                    out["decoded_head"] = txt[:80].replace("\n", "⏎")
+                    out["decoded_has_netscape"] = "Netscape HTTP Cookie" in txt
+                    out["decoded_youtube_lines"] = sum(
+                        1 for ln in txt.splitlines() if "youtube" in ln.lower())
+                except Exception as exc:
+                    out["decoded_error"] = f"{type(exc).__name__}: {exc}"[:150]
+            if raw:
+                out["raw_length"] = len(raw)
+                out["raw_youtube_lines"] = sum(
+                    1 for ln in raw.splitlines() if "youtube" in ln.lower())
             self._json(out)
             return
 
