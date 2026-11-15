@@ -153,6 +153,17 @@ def _cookie_file():
             path = _cached_cookie_path(body)
             if path:
                 return path
+    # bundled anonymous visitor jar (no account, just a normal browser identity)
+    bundled = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "assets", "yt-anonymous-cookies.txt")
+    if os.path.exists(bundled):
+        try:
+            with open(bundled, "r", errors="replace") as fh:
+                body, names = _parse_cookies(fh.read())
+            if names:
+                return _cached_cookie_path(body) or bundled
+        except Exception:
+            pass
     if os.path.exists(COOKIE_STORE):
         try:
             with open(COOKIE_STORE, "r", errors="replace") as fh:
