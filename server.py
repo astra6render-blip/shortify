@@ -56,21 +56,23 @@ def video_meta(vid: str):
     # IP is blocked (verified: youtube.com/generate_204 returns 204 fine).
     attempts = [
         {"player_client": ["android"]},
-        {"player_client": ["android"], "player_skip": ["webpage", "configs"]},
         {"player_client": ["tv_embedded"], "player_skip": ["webpage", "configs"]},
-        {"player_client": ["android_vr"], "player_skip": ["webpage", "configs"]},
-        {"player_client": ["ios"]},
+        {"player_client": ["android"], "player_skip": ["webpage", "configs"]},
     ]
+    # a proxied host cuts the connection at ~100s, so keep the whole thing short
+    deadline = time.time() + 45
     info = None
     last_exc = None
     for attempt in attempts:
+        if time.time() > deadline:
+            break
         opts = {
             "quiet": True,
             "no_warnings": True,
             "skip_download": True,
             "noplaylist": True,
-            "socket_timeout": 15,
-            "retries": 1,
+            "socket_timeout": 10,
+            "retries": 0,
             "extractor_args": {"youtube": attempt},
         }
         try:

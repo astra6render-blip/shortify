@@ -79,7 +79,7 @@ def _real_source(state):
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
-        "socket_timeout": 20,
+        "socket_timeout": 12,
         "outtmpl": cached,
         # widest to narrowest so a partial client still yields something
         "format": ("bv*[height<=1080][ext=mp4]+ba[ext=m4a]/"
@@ -124,10 +124,13 @@ def _real_source(state):
         pass
     # Same per-IP client rotation as the metadata path: try several before
     # concluding the network is blocked.
-    clients = (["android"], ["tv_embedded"], ["android_vr"], ["ios"], ["web_safari"])
+    clients = (["android"], ["tv_embedded"], ["android_vr"])
     last_exc = None
     downloaded = False
+    dl_deadline = time.time() + 180
     for cl in clients:
+        if time.time() > dl_deadline:
+            break
         opts["extractor_args"] = {"youtube": {"player_client": cl}}
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
