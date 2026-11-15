@@ -160,33 +160,6 @@ class Handler(SimpleHTTPRequestHandler):
             })
             return
 
-        if path == "/api/net-debug":
-            import urllib.request as _ur
-            out = {}
-            for label, url in (("egress", "https://ipinfo.io/json"),
-                               ("youtube_probe", "https://www.youtube.com/generate_204")):
-                try:
-                    with _ur.urlopen(url, timeout=12) as r:
-                        raw = r.read(300).decode("utf-8", "replace")
-                        out[label] = {"status": r.status, "body": raw[:280]}
-                except Exception as e:
-                    out[label] = {"error": type(e).__name__, "msg": str(e)[:160]}
-            # what does yt-dlp itself say?
-            try:
-                import yt_dlp
-                o = {"quiet": True, "no_warnings": True, "skip_download": True,
-                     "socket_timeout": 15, "retries": 1,
-                     "extractor_args": {"youtube": {"player_client": ["android"]}}}
-                with yt_dlp.YoutubeDL(o) as ydl:
-                    ydl.extract_info("https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                                     download=False)
-                out["yt_dlp"] = {"ok": True, "version": yt_dlp.version.__version__}
-            except Exception as e:
-                out["yt_dlp"] = {"ok": False, "version": getattr(
-                    __import__("yt_dlp").version, "__version__", "?"),
-                    "error": type(e).__name__, "msg": str(e)[:400]}
-            self._json(out)
-            return
         if path == "/api/video":
             vid = (parse_qs(parsed.query).get("id") or [""])[0]
             if not YT_ID.match(vid):
