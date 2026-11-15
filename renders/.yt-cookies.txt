@@ -1,0 +1,3 @@
+# Netscape HTTP Cookie File
+.youtube.com	TRUE	/	TRUE	1893456000	SID	abc
+.youtube.com	TRUE	/	TRUE	1893456000	HSID	def

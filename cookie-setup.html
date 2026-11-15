@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shortify · YouTube cookies setup</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{--bg:#0b0a12;--card:#15131f;--line:#2a2740;--ink:#eceaf6;--dim:#9b96b8;
+      --mint:#5ef2c0;--violet:#a78bfa;--warn:#ffcf5c;--bad:#ff6b8a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.02em}
+.sub{color:var(--dim);margin:0 0 28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+      padding:22px;margin:0 0 18px}
+.step{display:flex;gap:12px;align-items:flex-start;margin:0 0 10px}
+.num{flex:0 0 26px;height:26px;border-radius:50%;background:var(--violet);
+     color:#0b0a12;font-weight:700;font-size:13px;display:grid;place-items:center}
+h2{font-size:16px;margin:0 0 8px}
+ol,ul{margin:8px 0 0 20px;padding:0}
+li{margin:6px 0}
+textarea{width:100%;min-height:180px;background:#0e0c16;color:var(--ink);
+  border:1px solid var(--line);border-radius:12px;padding:14px;font:13px/1.5 ui-monospace,monospace;
+  resize:vertical}
+textarea:focus{outline:none;border-color:var(--violet)}
+button{background:var(--violet);color:#0b0a12;border:0;border-radius:11px;
+  padding:13px 22px;font-weight:700;font-size:15px;cursor:pointer;margin-top:14px}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);
+  font-weight:600}
+.out{margin-top:16px;padding:14px;border-radius:12px;background:#0e0c16;
+     border:1px solid var(--line);font:13px/1.55 ui-monospace,monospace;
+     white-space:pre-wrap;word-break:break-word;display:none}
+.out.show{display:block}
+.out.ok{border-color:var(--mint);color:var(--mint)}
+.out.bad{border-color:var(--bad);color:var(--bad)}
+.out.warn{border-color:var(--warn);color:var(--warn)}
+code{background:#0e0c16;border:1px solid var(--line);border-radius:6px;
+     padding:2px 6px;font-size:12.5px}
+.alt{border-top:1px dashed var(--line);margin-top:20px;padding-top:18px}
+.alt summary{cursor:pointer;color:var(--dim);font-size:14px}
+.small{color:var(--dim);font-size:13px}
+.status{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;
+  border-radius:999px;background:#0e0c16;border:1px solid var(--line);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--bad)}
+.dot.ok{background:var(--mint)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Connect YouTube</h1>
+  <p class="sub">YouTube blocks this server's IP. Pasting your browser cookies fixes it.
+     Takes one minute and needs no terminal.</p>
+
+  <div class="card">
+    <div class="status"><span class="dot" id="dot"></span><span id="state">checking…</span></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">1</span><div>
+      <h2>Copy your YouTube cookies</h2>
+      <ol>
+        <li>Open <code>youtube.com</code> in Chrome and <b>sign in</b>.</li>
+        <li>Press <code>F12</code> (or <code>Cmd+Option+I</code> on Mac) to open DevTools.</li>
+        <li>Click the <b>Console</b> tab.</li>
+        <li>Paste this and press Enter:</li>
+      </ol>
+      <textarea id="snippet" readonly>copy(document.cookie)</textarea>
+      <button class="ghost" onclick="navigator.clipboard.writeText(document.getElementById('snippet').value)">Copy snippet</button>
+      <p class="small" style="margin-top:10px">The console prints a long line of text. Copy everything it prints.</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">2</span><div>
+      <h2>Paste it here</h2>
+      <textarea id="jar" placeholder="Paste the cookie text here…"></textarea>
+      <button id="save">Save cookies</button>
+      <div class="out" id="result"></div>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <details class="alt">
+      <summary>Only getting a few cookies? Try the full cookie-file method</summary>
+      <div style="margin-top:14px">
+        <p class="small">The console shows only non-HttpOnly cookies, which is usually
+          enough. If YouTube still refuses, export the complete cookie jar:</p>
+        <ol>
+          <li>In Chrome install the extension <b>“Get cookies.txt LOCALLY”</b>.</li>
+          <li>Visit <code>youtube.com</code>, click the extension, choose <b>Export</b>.</li>
+          <li>It downloads <code>cookies.txt</code>. Open it in Notepad / TextEdit.</li>
+          <li>Select all of it, copy, and paste into the box above.</li>
+        </ol>
+        <p class="small">Both formats are accepted — the server detects which one you pasted.</p>
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const token = new URLSearchParams(location.search).get('token') || '';
+
+async function refresh() {
+  try {
+    const r = await fetch('/api/yt-status');
+    const j = await r.json();
+    const n = j.cookies_count || 0;
+    $('#dot').classList.toggle('ok', n > 0);
+    $('#state').textContent = n > 0
+      ? `Connected · ${n} YouTube cookies`
+      : 'Not connected yet';
+  } catch (e) {
+    $('#state').textContent = 'could not reach the server';
+  }
+}
+
+function say(cls, text) {
+  const o = $('#result');
+  o.className = 'out show ' + cls;
+  o.textContent = text;
+}
+
+$('#save').addEventListener('click', async () => {
+  const raw = $('#jar').value.trim();
+  if (!raw) { say('warn', 'Paste the cookie text first.'); return; }
+  $('#save').disabled = true;
+  say('warn', 'Saving…');
+  try {
+    const r = await fetch('/api/set-cookies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, cookies: raw })
+    });
+    const j = await r.json();
+    if (j.ok) {
+      say('ok', `Saved ${j.count} YouTube cookies.\nPaste a YouTube link in the studio and it will work.`);
+      refresh();
+    } else {
+      say('bad', j.error || 'That did not look like cookies. Try the full cookie-file method below.');
+    }
+  } catch (e) {
+    say('bad', 'Could not reach the server: ' + e.message);
+  } finally {
+    $('#save').disabled = false;
+  }
+});
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>
