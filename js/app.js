@@ -39,7 +39,7 @@
   }
 
   /* ---------------- toast (landing-safe) ---------------- */
-  function toast(title, sub, type) {
+  function toast(title, sub, type, ms) {
     let wrap = $('toasts');
     if (!wrap) {
       wrap = document.createElement('div');
@@ -54,7 +54,7 @@
       String(title).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) +
       (sub ? '<small>' + String(sub).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</small>' : '') + '</span>';
     wrap.appendChild(d);
-    setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 320); }, 3000);
+    setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 320); }, Math.max(2000, ms || 3000));
     while (wrap.children.length > 3) wrap.firstChild.remove();
   }
 
@@ -70,7 +70,10 @@
       const source = {
         url: parseYT(url) ? 'https://www.youtube.com/watch?v=' + id : S.DEMO.url,
         id: id,
-        isDemo: !parseYT(url) || id === S.DEMO.id,
+        /* a real link the server could not read is still a DEMO render */
+        isDemo: !parseYT(url) || id === S.DEMO.id || !!meta.demo,
+        liveFailed: !!parseYT(url) && id !== S.DEMO.id && !!meta.demo,
+        note: meta.note || '',
         title: meta.title || S.DEMO.title,
         channel: meta.channel || S.DEMO.channel,
         duration: S.DEMO.duration,
@@ -81,6 +84,14 @@
         file: S.DEMO.file,
         note: meta.note || ''
       };
+      if (source.liveFailed) {
+        toast(
+          'Could not read that YouTube video',
+          'This server’s network is blocked by YouTube, so the demo reel loads instead. ' +
+          'Your timeline and effects still work — press Render to export.',
+          'warn', 9000
+        );
+      }
       App.project = {
         source,
         moments: S.buildMoments(source.duration, source.id)
@@ -144,7 +155,8 @@
     show('analyzing');
     const src = project.source;
     $('anTitle').textContent = src.title.length > 64 ? src.title.slice(0, 61) + '…' : src.title;
-    $('anMeta').textContent = src.channel + '  ·  ' + S.fmt(src.sourceDuration, true) + ' source  ·  ' + (src.isDemo ? 'demo reel' : 'link mode');
+    $('anMeta').textContent = src.channel + '  ·  ' + S.fmt(src.sourceDuration, true) + ' source  ·  ' +
+      (src.liveFailed ? 'link blocked → demo reel' : src.isDemo ? 'demo reel' : 'live link');
     $('rdyBtn').disabled = true;
     $('anBar').style.width = '0%';
     $('anPct').textContent = '0%';
@@ -168,7 +180,10 @@
         sv.currentTime = 14;
         sv.play().catch(() => {});
       }
-      if (badge) { badge.textContent = 'DEMO REEL'; badge.classList.remove('link'); }
+      if (badge) {
+        badge.textContent = src.liveFailed ? 'LINK BLOCKED · DEMO' : 'DEMO REEL';
+        badge.classList.remove('link');
+      }
     }
 
     const steps = [
@@ -240,11 +255,25 @@
   function fetchMeta(id) {
     return new Promise(resolve => {
       const ctrl = new AbortController();
-      const tm = setTimeout(() => ctrl.abort(), 4000);
+      /* yt-dlp on a cold container can take ~30s; give it room */
+      const tm = setTimeout(() => ctrl.abort(), 30000);
       fetch('/api/video?id=' + encodeURIComponent(id), { signal: ctrl.signal })
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(j => { clearTimeout(tm); resolve(j && (j.title || j.channel) ? j : demoMeta()); })
-        .catch(() => { clearTimeout(tm); resolve(demoMeta()); });
+        .then(j => {
+          clearTimeout(tm);
+          if (j && j.demo) {
+            /* server could not read the link — say so, do not pretend */
+            resolve({ ...demoMeta(), demo: true, note: j.note || 'link unreadable' });
+          } else if (j && (j.title || j.channel)) {
+            resolve({ ...j, demo: false });
+          } else {
+            resolve({ ...demoMeta(), demo: true, note: 'server returned no metadata' });
+          }
+        })
+        .catch(() => {
+          clearTimeout(tm);
+          resolve({ ...demoMeta(), demo: true, note: 'could not reach the server' });
+        });
     });
   }
   function demoMeta() {

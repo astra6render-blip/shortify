@@ -51,14 +51,16 @@ def video_meta(vid: str):
     except Exception:
         return dict(DEMO_META, id=vid, note="yt-dlp not installed; demo metadata")
 
+    # YouTube is picky: the web client demands auth from datacenter IPs, while
+    # android/android_vr often still work. Try a few before giving up.
     opts = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
         "noplaylist": True,
-        "socket_timeout": 8,
-        # 'android' works on headless datacenter IPs where web requires auth
-        "extractor_args": {"youtube": {"player_client": ["android"]}},
+        "socket_timeout": 15,
+        "retries": 1,
+        "extractor_args": {"youtube": {"player_client": ["android_vr", "android", "web_safari"]}},
     }
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -78,8 +80,8 @@ def video_meta(vid: str):
             "demo": False,
         }
     except Exception as exc:
-        return dict(DEMO_META, id=vid,
-                    note=f"metadata unavailable ({type(exc).__name__}); demo fallback")
+        return dict(DEMO_META, id=vid, demo=True,
+                    note="youtube blocked this server's network; demo reel used")
 
 
 class _SlicedFile:

@@ -34,18 +34,36 @@ SOURCE_CACHE = os.environ.get("SHORTIFY_SOURCE_CACHE", os.path.join(ROOT, "rende
 YT_ID = re.compile(r"^[\w-]{6,32}$")
 
 
+def _ffmpeg_dir():
+    """Directory containing ffmpeg (yt-dlp needs a dir, not a file path)."""
+    found = shutil.which("ffmpeg")
+    if found:
+        return os.path.dirname(found)
+    try:
+        import imageio_ffmpeg  # noqa: WPS433
+        return os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
+    except Exception:
+        return ""
+
+
 def _real_source(state):
     """Return a local file for a real link, or None. Downloads are cached."""
     src = state.get("source") or {}
     if not isinstance(src, dict):
-        return None, None
+        return None, None, 0.0
     vid = str(src.get("id") or "").strip()
     if not YT_ID.match(vid) or src.get("demo"):
-        return None, None
+        return None, None, 0.0
     os.makedirs(SOURCE_CACHE, exist_ok=True)
     cached = os.path.join(SOURCE_CACHE, f"{vid}.mp4")
+    offset_file = cached + ".offset"
     if os.path.exists(cached) and os.path.getsize(cached) > 100_000:
-        return cached, vid
+        off = 0.0
+        try:
+            off = float(open(offset_file).read().strip())
+        except Exception:
+            pass
+        return cached, vid, off
 
     start = _num(state.get("start"), 0, 0, 36000)
     end = _num(state.get("end"), start + 15, start + 1, 36000)
@@ -63,12 +81,42 @@ def _real_source(state):
         "noplaylist": True,
         "socket_timeout": 20,
         "outtmpl": cached,
-        "format": "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/b",
+        # widest to narrowest so a partial client still yields something
+        "format": ("bv*[height<=1080][ext=mp4]+ba[ext=m4a]/"
+                   "bv*[height<=1080]+ba/"
+                   "b[height<=1080][ext=mp4]/b[height<=720]/b"),
         "merge_output_format": "mp4",
         "download_ranges": None,
-        "extractor_args": {"youtube": {"player_client": ["android", "ios", "web_safari"]}},
+        # yt-dlp wants a DIRECTORY here, not the binary path
+        "ffmpeg_location": _ffmpeg_dir(),
+        # 'android' alone is the reliable one for ranged downloads: web_safari
+        # returns a stream layout that ffmpeg refuses to seek into (exit 8),
+        # and android_vr sometimes yields no cuttable format.
+        "extractor_args": {"youtube": {"player_client": ["android"]}},
         "retries": 2,
     }
+    # Optional: a cookies file makes YouTube treat us as a signed-in browser,
+    # which is the reliable way past datacenter-IP blocking.
+    ck = os.environ.get("YT_COOKIES", "").strip()
+    if ck and os.path.exists(ck):
+        opts["cookiefile"] = ck
+        opts.pop("extractor_args", None)
+    elif os.environ.get("YT_COOKIES_B64"):
+        import base64
+        import tempfile
+        try:
+            raw = base64.b64decode(os.environ["YT_COOKIES_B64"])
+            fd, ckpath = tempfile.mkstemp(suffix=".txt", prefix="ytck-")
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(raw)
+            opts["cookiefile"] = ckpath
+            opts.pop("extractor_args", None)
+        except Exception:
+            pass
+
+    # Ranged download => yt-dlp only fetches the seconds we need. This works
+    # with ffmpeg alone (verified on a box with no ffprobe). If it ever fails,
+    # the caller falls back to the cached/demo path gracefully.
     try:
         from yt_dlp.utils import download_range_func
         opts["download_ranges"] = download_range_func(None, [(max(0, start - pad), end + pad)])
@@ -79,16 +127,26 @@ def _real_source(state):
             ydl.download([f"https://www.youtube.com/watch?v={vid}"])
     except Exception as exc:
         raise RuntimeError(
-            "could not download that YouTube link from this server "
-            f"({type(exc).__name__}). YouTube blocks datacenter IPs — run the "
-            "server on a host with normal network access, or render the demo reel."
+            "YouTube refused this server. It blocks most cloud/datacenter IPs "
+            "unless the request is signed in. Options: run Shortify on a home "
+            "connection or VPS with normal residential access, pass browser "
+            "cookies via YT_COOKIES, or render the built-in demo reel."
         ) from exc
     if not os.path.exists(cached):
         for name in os.listdir(SOURCE_CACHE):
             if name.startswith(vid):
-                return os.path.join(SOURCE_CACHE, name), vid
+                fp = os.path.join(SOURCE_CACHE, name)
+                return fp, vid, max(0.0, start - pad)
         raise RuntimeError("download finished but no video file was produced")
-    return cached, vid
+
+    # A ranged download is re-timed to start at 0, so remember the real offset.
+    offset = max(0.0, start - pad)
+    try:
+        with open(offset_file, "w") as fh:
+            fh.write(f"{offset:.3f}")
+    except Exception:
+        pass
+    return cached, vid, offset
 
 OUTPUT_PRESETS = {
     "1080p": (1080, 1920),
@@ -368,13 +426,15 @@ def _ass_escape(text):
     return text.replace("\\", "＼").replace("{", "(").replace("}", ")")
 
 
-def build_command(state, out_path, ass_path=None, source=None, w=1080, h=1920):
+def build_command(state, out_path, ass_path=None, source=None, w=1080, h=1920, offset=0.0):
     fx = _effects(state)
     intensity = _num(state.get("intensity"), 60, 0, 100) / 100.0
     bpm = _num(state.get("bpm"), 96, 40, 220)
     fps = _norm_fps(state.get("fps"), 30)
     cut_start = _num(state.get("start"), 0, 0, 36000)
     cut_end = _num(state.get("end"), cut_start + 15, cut_start + 1, 36000)
+    # a ranged download starts at 0, so seek into the clip, not the original
+    seek = max(0.0, cut_start - offset) if offset else cut_start
     zoom_amt = _num(state.get("zoom"), 12, 0, 40) / 100.0
     look = LOOKS.get(state.get("look"), "")
     letterbox = bool(state.get("letterbox"))
@@ -483,7 +543,7 @@ def build_command(state, out_path, ass_path=None, source=None, w=1080, h=1920):
     cmd = [
         ff, "-y", "-hide_banner", "-loglevel", "error",
         "-threads", threads,
-        "-ss", f"{cut_start:.3f}", "-t", f"{max(0.5, cut_end - cut_start):.3f}",
+        "-ss", f"{seek:.3f}", "-t", f"{max(0.5, cut_end - cut_start):.3f}",
         "-i", source or (SOURCE_1080 if os.path.exists(SOURCE_1080) else SOURCE_PREVIEW),
         "-vf", ",".join(parts),
         "-r", str(fps),
@@ -567,7 +627,7 @@ def render(state):
             fh.write(ass)
 
     # real link → local file (cached); demo → bundled 1080p master
-    source_path, source_id = _real_source(state)
+    source_path, source_id, source_off = _real_source(state)
     if not source_path:
         source_path = SOURCE_1080 if os.path.exists(SOURCE_1080) else SOURCE_PREVIEW
 
@@ -585,7 +645,8 @@ def render(state):
         )
 
     cmd = build_command(state, tmp_path, ass_path,
-                        source=source_path, w=plan["w"], h=plan["h"])
+                        source=source_path, w=plan["w"], h=plan["h"],
+                        offset=source_off)
     t0 = time.time()
     if not _encode_lock.acquire(timeout=30):
         raise RuntimeError("the renderer is busy — try again in a moment")
