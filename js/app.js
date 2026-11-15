@@ -262,6 +262,26 @@
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(j => {
           clearTimeout(tm);
+          if (j && j.pending) {
+            /* server is still reading the link — poll a few more times */
+            let tries = 0;
+            const poll = () => {
+              tries += 1;
+              if (tries > 6) { resolve({ ...demoMeta(), demo: true, note: 'server too slow' }); return; }
+              setTimeout(() => {
+                fetch('/api/video?id=' + encodeURIComponent(id))
+                  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                  .then(k => {
+                    if (k && k.pending) poll();
+                    else if (k && k.demo) resolve({ ...demoMeta(), demo: true, note: k.note || '' });
+                    else resolve({ ...k, demo: false });
+                  })
+                  .catch(() => poll());
+              }, 2500);
+            };
+            poll();
+            return;
+          }
           if (j && j.demo) {
             /* server could not read the link — say so, do not pretend */
             resolve({ ...demoMeta(), demo: true, note: j.note || 'link unreadable' });
