@@ -152,6 +152,20 @@ class Handler(SimpleHTTPRequestHandler):
                         out[label] = {"status": r.status, "body": raw[:280]}
                 except Exception as e:
                     out[label] = {"error": type(e).__name__, "msg": str(e)[:160]}
+            # what does yt-dlp itself say?
+            try:
+                import yt_dlp
+                o = {"quiet": True, "no_warnings": True, "skip_download": True,
+                     "socket_timeout": 15, "retries": 1,
+                     "extractor_args": {"youtube": {"player_client": ["android"]}}}
+                with yt_dlp.YoutubeDL(o) as ydl:
+                    ydl.extract_info("https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                                     download=False)
+                out["yt_dlp"] = {"ok": True, "version": yt_dlp.version.__version__}
+            except Exception as e:
+                out["yt_dlp"] = {"ok": False, "version": getattr(
+                    __import__("yt_dlp").version, "__version__", "?"),
+                    "error": type(e).__name__, "msg": str(e)[:400]}
             self._json(out)
             return
         if path == "/api/video":
