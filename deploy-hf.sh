@@ -7,7 +7,7 @@ SPACE="${1:-shortify}"
 API="https://huggingface.co/api"
 
 USER=$(curl -s -H "Authorization: Bearer $HF_TOKEN" "$API/whoami-v2" \
-  | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get("name") or "")")
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("name") or "")')
 echo "user: $USER"
 
 echo "→ creating space $USER/$SPACE (docker)"
