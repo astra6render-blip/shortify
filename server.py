@@ -247,6 +247,33 @@ class Handler(SimpleHTTPRequestHandler):
             })
             return
 
+        if path == "/api/yt-status":
+            # Diagnostic: does the server see cookies, and what does YouTube say?
+            out = {"cookies_configured": False, "cookies_count": 0}
+            try:
+                ck = _cookie_file()
+                if ck and os.path.exists(ck):
+                    out["cookies_configured"] = True
+                    with open(ck, "r", errors="replace") as fh:
+                        body = fh.read()
+                    out["cookies_count"] = sum(
+                        1 for ln in body.splitlines()
+                        if "youtube" in ln and not ln.startswith("#"))
+                    names = []
+                    for ln in body.splitlines():
+                        if ln.startswith("#") or not ln.strip():
+                            continue
+                        parts = ln.split("	")
+                        if len(parts) >= 6 and "youtube" in parts[0]:
+                            names.append(parts[5])
+                    out["cookie_names"] = sorted(set(names))[:20]
+            except Exception as exc:
+                out["cookie_error"] = f"{type(exc).__name__}: {exc}"[:200]
+            out["env_keys"] = sorted(
+                k for k in os.environ if "YT_" in k or "COOKIE" in k.upper())
+            self._json(out)
+            return
+
         if path == "/api/video":
             vid = (parse_qs(parsed.query).get("id") or [""])[0]
             if not YT_ID.match(vid):
