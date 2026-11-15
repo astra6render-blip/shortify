@@ -1,0 +1,20 @@
+# Render Blueprint — connect this repo at https://dashboard.render.com/blueprints
+# and Render deploys Shortify automatically (Docker, ffmpeg included).
+services:
+  - type: web
+    name: shortify
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free            # change to "starter" for always-on + more CPU/RAM
+    region: oregon
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: SHORTIFY_SOURCE_CACHE
+        value: /tmp/shortify-sources
+    disk:
+      name: renders
+      mountPath: /app/renders
+      sizeGB: 1

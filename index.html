@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortify — YouTube to Shorts auto-cutter · render up to 4K 120fps</title>
+<meta name="description" content="Paste a YouTube link and Shortify auto-cuts the best moments into vertical Shorts with karaoke captions and live effects. Export real MP4s at 1080p, 1440p or 4K — 30, 60 or 120 fps.">
+<meta name="keywords" content="YouTube to Shorts, auto cutter, shorts maker, clip generator, vertical video editor, karaoke captions, 4K video export, 120fps video, YouTube clipper">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="author" content="Shortify">
+<link rel="canonical" href="https://shortify.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Shortify">
+<meta property="og:title" content="Shortify — paste a YouTube link, get editable Shorts">
+<meta property="og:description" content="Auto-cut any YouTube link into 9:16 Shorts with captions and effects. Render real MP4s from 1080p up to 4K at 30/60/120fps.">
+<meta property="og:url" content="https://shortify.com/">
+<meta property="og:image" content="https://shortify.com/media/poster.jpg">
+<meta property="og:image:alt" content="Shortify studio editing a vertical Short">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Shortify — YouTube link → editable Shorts → 4K MP4">
+<meta name="twitter:description" content="Auto-cut, karaoke captions, 10 live effects. Render 1080p to 4K at up to 120fps.">
+<meta name="twitter:image" content="https://shortify.com/media/poster.jpg">
+<meta name="theme-color" content="#07060d">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="%237c5cff"/><path d="M18 24v16a4 4 0 0 0 6 3.4l13-8a4 4 0 0 0 0-6.8l-13-8A4 4 0 0 0 18 24z" fill="white"/></svg>'>
+<link rel="apple-touch-icon" href="media/poster.jpg">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "Shortify",
+      "url": "https://shortify.com/",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web",
+      "description": "Paste a YouTube link, auto-cut the best moments into vertical Shorts with karaoke captions and live effects, then render real MP4s from 1080p to 4K at 30, 60 or 120 fps.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "featureList": [
+        "YouTube link auto-cutting",
+        "9:16, 1:1 and 4:5 canvases",
+        "Word-timed karaoke captions",
+        "10 stackable live effects",
+        "Real MP4 render at 1080p, 1440p and 4K",
+        "30, 60 and 120 fps output"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Can Shortify turn a YouTube link into a Short?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Paste a YouTube link, Shortify reads the video and proposes four auto-cut moments, then you trim, caption and export." }
+        },
+        {
+          "@type": "Question",
+          "name": "What resolution and frame rate can I export?",
+          "acceptedAnswer": { "@type": "Answer", "text": "1080p (1080x1920), 1440p (1440x2560) and 4K UHD (2160x3840) at 30, 60 or 120 fps, rendered by ffmpeg on the server." }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Shortify free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Shortify is open source and free to self-host. Only use links to content you own or that is licensed for reuse." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="landing">
+
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+  <div class="grid-floor"></div>
+</div>
+<div class="bg-noise" aria-hidden="true"></div>
+
+<div id="app">
+
+<!-- ======================= LANDING ======================= -->
+<main id="page-landing" class="page">
+  <header class="nav">
+    <a class="brand" href="#/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><path d="M18 24v16a4 4 0 0 0 6 3.4l13-8a4 4 0 0 0 0-6.8l-13-8A4 4 0 0 0 18 24z"/></svg>
+      </span>
+      <span class="brand-name">Shortify</span>
+      <span class="brand-badge">BETA</span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#render">Render specs</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn ghost sm" href="#studio">Open Studio</a>
+    </div>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="hero-copy">
+      <div class="eyebrow">
+        <span class="pulse-dot"></span> Paste a link · Get Shorts · Edit every frame
+      </div>
+      <h1>Long videos in.<br><span class="grad-text">Scroll-stopping Shorts</span> out.</h1>
+      <p class="lede">Shortify reads any YouTube link, finds the moments people actually watch, and hands you a vertical 9:16 cut with captions, punch-ins and a caption card — ready to fine-tune in the studio.</p>
+
+      <form class="link-bar" id="linkForm" novalidate>
+        <span class="link-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.6 13.4a4.2 4.2 0 0 0 6 0l2.6-2.6a4.24 4.24 0 0 0-6-6l-1.2 1.2"/><path d="M13.4 10.6a4.2 4.2 0 0 0-6 0L4.8 13.2a4.24 4.24 0 0 0 6 6l1.2-1.2"/></svg>
+        </span>
+        <input id="ytUrl" name="url" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Paste a YouTube link — https://youtube.com/watch?v=…"
+               aria-label="YouTube video URL">
+        <button class="btn primary" type="submit" id="goBtn">
+          Auto-cut it <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+      <div class="bar-meta">
+        <span id="usedMeta">
+          <span class="chip" title="Detected from the link">YouTube</span>
+          <span class="dot-sep">·</span>
+          <span class="sample-link">No link handy? <button type="button" class="linklike" id="demoLink">Try the demo video <em>(Big Buck Bunny · CC-BY)</em></button></span>
+        </span>
+        <span class="drop-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 13v-9M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          or drop a link anywhere
+        </span>
+      </div>
+
+      <ul class="hero-bullets">
+        <li><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M4 12.5l5 5L20 6.5"/></svg> Auto moment detection</li>
+        <li><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M4 12.5l5 5L20 6.5"/></svg> Word-timed captions</li>
+        <li><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M4 12.5l5 5L20 6.5"/></svg> 9:16 / 1:1 / 4:5 frames</li>
+        <li><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M4 12.5l5 5L20 6.5"/></svg> Real MP4 · 1080p → 4K · 120 fps</li>
+      </ul>
+    </div>
+
+    <div class="hero-art" aria-hidden="true">
+      <div class="phone phone-hero" data-tilt>
+        <div class="phone-bezel">
+          <video id="heroVideo" src="media/demo.mp4" muted playsinline loop preload="metadata"></video>
+          <div class="phone-glow"></div>
+          <div class="phone-ui">
+            <div class="pill pill-ai"><span class="pulse-dot"></span> Auto-cutting…</div>
+            <div class="hero-caption" id="heroCap">switching to the <mark>knife</mark></div>
+            <div class="phone-progress"><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="float-card fc-1">
+        <div class="fc-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg></div>
+        <div><b>12 moments found</b><small>in a 10:35 video</small></div>
+      </div>
+      <div class="float-card fc-2">
+        <div class="fc-icon mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6 4 4 6-8"/></svg></div>
+        <div><b>Hook score 94</b><small>“Wait for the twist…”</small></div>
+      </div>
+      <div class="float-card fc-3">
+        <div class="mini-wave" id="miniWave"></div>
+        <div><b>Beat-synced</b><small>cuts on the music</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="logo-row" id="how">
+    <p>BUILT FOR EVERY CREATOR PIPELINE</p>
+    <div class="logos">
+      <span>Talking heads</span><i>✦</i><span>Podcasts</span><i>✦</i><span>Gameplay</span><i>✦</i><span>Vlogs</span><i>✦</i><span>Lectures</span><i>✦</i><span>Interviews</span>
+    </div>
+  </section>
+
+  <section class="steps" id="features">
+    <div class="section-head">
+      <span class="kicker">The workflow</span>
+      <h2>From link to timeline in <span class="grad-text">three moves</span></h2>
+      <p>No uploads, no render farms. Shortify works on the link and lets you shape the result like clay.</p>
+    </div>
+    <div class="step-grid">
+      <article class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-visual sv-paste">
+          <div class="fake-input"><span class="yt-chip">▶</span> youtu.be/dQw4w9… <kbd>⌘V</kbd></div>
+        </div>
+        <h3>Paste the link</h3>
+        <p>Drop any YouTube URL. Shortify reads the title, duration, storyboard and audio energy — instantly.</p>
+      </article>
+      <article class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-visual sv-scan">
+          <div class="scan-strip"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="scan-line"></div>
+        </div>
+        <h3>Auto-cut the gold</h3>
+        <p>Moment detection scores hooks, energy spikes and pause boundaries, then proposes 4 ready-to-post cuts.</p>
+      </article>
+      <article class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-visual sv-edit">
+          <div class="timeline-mini"><i style="left:6%;width:22%"></i><i style="left:32%;width:30%"></i><i style="left:66%;width:24%"></i></div>
+          <div class="knob"></div>
+        </div>
+        <h3>Make it yours</h3>
+        <p>Trim, auto-caption, punch-in zoom, beat-synced shakes, stickers and grading — all live in the studio.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="effect-band">
+    <div class="effect-copy">
+      <span class="kicker">Effects that actually pop</span>
+      <h2>One slider. <span class="grad-text">Big energy.</span></h2>
+      <p>Every effect previews live on the phone canvas — no re-render. Stack a beat-synced zoom with glitch text and a VHS wash, then dial intensity until it feels right.</p>
+      <div class="fx-tags">
+        <span>Punch-in</span><span>Shake</span><span>Whip blur</span><span>Beat pulse</span><span>Glitch</span><span>RGB split</span><span>VHS</span><span>Ken Burns</span>
+      </div>
+      <a class="btn line" href="#studio">Open the Studio <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="effect-stage" aria-hidden="true">
+      <div class="fx-card fx-a"><span>97%</span><small>hook retention</small></div>
+      <div class="fx-card fx-b"><span>+214%</span><small>watch-through</small></div>
+      <div class="fx-card fx-c"><span>×3.2</span><small>shorts per shoot</small></div>
+      <div class="fx-ring"></div>
+    </div>
+  </section>
+
+  <section class="specs" id="render">
+    <div class="section-head">
+      <span class="kicker">Render specs</span>
+      <h2>Export up to <span class="grad-text">4K · 120 fps</span></h2>
+      <p>Every cut renders for real on the server with ffmpeg — the same crop, look, effects and captions you previewed.</p>
+    </div>
+    <div class="spec-table" role="table" aria-label="Export presets">
+      <div class="spec-row spec-head" role="row">
+        <span role="columnheader">Preset</span>
+        <span role="columnheader">9:16 output</span>
+        <span role="columnheader">Frame rates</span>
+        <span role="columnheader">Notes</span>
+      </div>
+      <div class="spec-row" role="row">
+        <span role="cell"><b>1080p</b><small>Full HD</small></span>
+        <span role="cell"><code>1080 × 1920</code></span>
+        <span role="cell"><i>30 / 60 / 120</i></span>
+        <span role="cell">Native from the 1080p master</span>
+      </div>
+      <div class="spec-row" role="row">
+        <span role="cell"><b>1440p</b><small>QHD</small></span>
+        <span role="cell"><code>1440 × 2560</code></span>
+        <span role="cell"><i>30 / 60 / 120</i></span>
+        <span role="cell">Lanczos upscale, 2K-ready</span>
+      </div>
+      <div class="spec-row featured" role="row">
+        <span role="cell"><b>4K UHD</b><small>Triple-A canvas</small></span>
+        <span role="cell"><code>2160 × 3840</code></span>
+        <span role="cell"><i>30 / 60 / 120</i></span>
+        <span role="cell">Best for YouTube Shorts, Reels &amp; TikTok reposts</span>
+      </div>
+      <div class="spec-row" role="row">
+        <span role="cell"><b>Motion</b><small>optional</small></span>
+        <span role="cell"><code>— </code></span>
+        <span role="cell"><i>60 / 120</i></span>
+        <span role="cell">True interpolated frames (mi_mode=mci), not just duplication</span>
+      </div>
+    </div>
+    <div class="spec-chips">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16v10H4zM8 7V5h8v2"/></svg> H.264 High</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 0 1 16 0M4 12v4h4M20 12v4h-4"/></svg> AAC 160k stereo</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19V5h9l5 5v9z"/></svg> faststart MP4</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg> Renders in seconds</span>
+    </div>
+  </section>
+
+  <section class="faq" id="faq">
+    <div class="section-head">
+      <span class="kicker">FAQ</span>
+      <h2>Questions, short answers</h2>
+    </div>
+    <div class="faq-list">
+      <details open>
+        <summary>Do my videos get uploaded anywhere?</summary>
+        <p>No. This build works entirely on the link: metadata and storyboards are fetched on demand, and editing stays in your browser. Nothing is stored on our side.</p>
+      </details>
+      <details>
+        <summary>Is this the real YouTube auto-cutter?</summary>
+        <p>This is the full product experience — paste, auto-cut proposals, and a working editor. Downloads and server-side rendering are stubbed with a clear demo mode so you can try every effect safely.</p>
+      </details>
+      <details>
+        <summary>What formats can I export?</summary>
+        <p>The studio composes 9:16, 1:1 and 4:5 frames at 1080p. The export panel assembles your cut plan (clips, effects, captions) and renders it to MP4 through the bundled server when you run Shortify locally.</p>
+      </details>
+      <details>
+        <summary>Does it cost anything?</summary>
+        <p>Shortify is open and free to run. Feed it links to content you own or that's licensed for reuse — the demo reel is Big Buck Bunny, released by Blender under CC-BY.</p>
+      </details>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="brand small">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M18 24v16a4 4 0 0 0 6 3.4l13-8a4 4 0 0 0 0-6.8l-13-8A4 4 0 0 0 18 24z"/></svg></span>
+        <span class="brand-name">Shortify</span>
+        <span class="brand-badge">shortify.com</span>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#render">Render specs</a>
+        <a href="#faq">FAQ</a>
+        <a href="#studio">Open Studio</a>
+      </nav>
+      <p>Cut faster. Post more. Stay vertical.</p>
+      <p class="fine">Demo footage: “Big Buck Bunny” © Blender Foundation, CC-BY 3.0. Not affiliated with YouTube. Only cut content you own or that is licensed for reuse.</p>
+    </div>
+  </footer>
+</main>
+
+<!-- ======================= ANALYZING ======================= -->
+<main id="page-analyzing" class="page" hidden>
+  <div class="analyze-wrap">
+    <div class="analyze-card">
+      <div class="analyze-head">
+        <div class="scan-thumb">
+          <video id="scanVideo" src="media/demo.mp4" muted playsinline preload="metadata"></video>
+          <img id="scanThumb" alt="" hidden>
+          <div class="scan-line"></div>
+          <div class="scan-grid"></div>
+          <span class="scan-badge" id="scanBadge">DEMO</span>
+        </div>
+        <div class="analyze-info">
+          <span class="kicker">Auto-cutting</span>
+          <h2 id="anTitle">Reading the video…</h2>
+          <p id="anMeta">—</p>
+          <div class="an-progress-wrap">
+            <div class="an-progress"><i id="anBar"></i></div>
+            <span id="anPct">0%</span>
+          </div>
+          <ul class="an-steps">
+            <li data-step="read"><span class="st-dot"></span> Reading video metadata &amp; storyboard</li>
+            <li data-step="audio"><span class="st-dot"></span> Mapping audio energy &amp; silences</li>
+            <li data-step="score"><span class="st-dot"></span> Scoring hooks and moment boundaries</li>
+            <li data-step="build"><span class="st-dot"></span> Building 4 ready-to-post cuts</li>
+          </ul>
+        </div>
+      </div>
+      <div class="an-log" id="anLog" aria-live="polite"></div>
+      <div class="an-actions">
+        <a class="btn ghost" href="#/">Cancel</a>
+        <button class="btn primary" id="rdyBtn" disabled>Open in Studio <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ======================= STUDIO ======================= -->
+<main id="page-studio" class="page" hidden>
+  <header class="studio-top">
+    <a class="brand" href="#/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M18 24v16a4 4 0 0 0 6 3.4l13-8a4 4 0 0 0 0-6.8l-13-8A4 4 0 0 0 18 24z"/></svg></span><span class="brand-name">Shortify</span></a>
+    <div class="studio-title">
+      <span class="st-source" id="stSource">—</span>
+      <span class="st-name" id="stProject">Untitled cut</span>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost sm" id="autoRecutBtn" title="Regenerate auto-cut proposals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg>
+        Re-detect
+      </button>
+      <button class="btn ghost sm icon-only" id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+      <button class="btn ghost sm icon-only" id="redoBtn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+      <button class="btn primary sm" id="exportBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v11M8 10l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        Export
+      </button>
+    </div>
+  </header>
+
+  <div class="studio-grid">
+    <aside class="panel panel-left">
+      <div class="seg-tabs" role="tablist" id="leftTabs">
+        <button class="on" data-tab="moments" role="tab">Moments</button>
+        <button data-tab="source" role="tab">Source</button>
+      </div>
+      <div class="panel-body" id="tabMoments">
+        <div class="panel-hint">Auto-detected · tap to apply</div>
+        <div id="momentList" class="moment-list"></div>
+        <div class="panel-hint dim">Moment scores come from audio energy, hook phrases and pause boundaries.</div>
+      </div>
+      <div class="panel-body" id="tabSource" hidden>
+        <div class="source-card">
+          <img id="srcThumb" alt="Video thumbnail" src="media/poster.jpg">
+          <div class="source-meta">
+            <b id="srcTitle">—</b>
+            <small id="srcChan">—</small>
+            <small id="srcDur">—</small>
+          </div>
+        </div>
+        <div class="field">
+          <label for="srcUrl">Source link</label>
+          <div class="link-row"><input id="srcUrl" type="text" spellcheck="false"><button class="btn ghost sm" id="srcLoad" type="button">Load</button></div>
+        </div>
+        <div class="panel-hint">Shortify reads the public link only — nothing is uploaded or stored.</div>
+        <div class="kv"><span>Mode</span><b id="srcMode">Demo reel</b></div>
+        <div class="kv"><span>Aspect</span><b>16:9 source → 9:16 output</b></div>
+        <div class="kv"><span>License</span><b>CC-BY · Blender</b></div>
+      </div>
+    </aside>
+
+    <section class="stage-wrap">
+      <div class="stage-top">
+        <div class="seg-format" id="formatTabs">
+          <button data-ar="9:16" class="on">9:16</button>
+          <button data-ar="1:1">1:1</button>
+          <button data-ar="4:5">4:5</button>
+        </div>
+        <div class="stage-hints">
+          <span><kbd>Space</kbd> play</span><span><kbd>I</kbd>/<kbd>O</kbd> mark</span><span><kbd>⌫</kbd> split/delete</span>
+        </div>
+      </div>
+      <div class="stage" id="stage">
+        <div class="phone-canvas" id="phoneCanvas">
+          <div class="overflow" id="videoOverflow">
+            <video id="editorVideo" src="media/demo.mp4" muted playsinline preload="auto"></video>
+          </div>
+          <canvas id="fxCanvas"></canvas>
+          <div class="safe-areas" id="safeAreas" hidden></div>
+          <div class="caption-layer" id="captionLayer"><div class="cap-word" id="capWord">caption</div></div>
+          <div class="captions-block" id="captionsBlock" hidden></div>
+          <div class="stickers-layer" id="stickersLayer"></div>
+          <div class="frame-note" id="frameNote">9:16 · 1080×1920</div>
+          <div class="playhint" id="playHint">tap to play</div>
+        </div>
+      </div>
+      <div class="transport">
+        <button class="tbtn" id="btnToStart" aria-label="Jump to start"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+        <button class="tbtn play" id="btnPlay" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor" id="playIco"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+        <button class="tbtn" id="btnToEnd" aria-label="Jump to end"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+        <div class="tc"><span id="tcNow">0.00</span><i>/</i><span id="tcDur">30.00</span></div>
+        <label class="vol">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+          <input type="range" id="volRange" min="0" max="1" step="0.05" value="0.8">
+        </label>
+        <span class="loop-badge" id="loopBadge" title="Playback loops inside your cut">LOOP CUT</span>
+      </div>
+    </section>
+
+    <aside class="panel panel-right">
+      <div class="seg-tabs" role="tablist" id="rightTabs">
+        <button class="on" data-tab="caption" role="tab">Caption</button>
+        <button data-tab="effects" role="tab">Effects</button>
+        <button data-tab="style" role="tab">Style</button>
+        <button data-tab="export" role="tab">Export</button>
+      </div>
+
+      <div class="panel-body" id="tabCaption">
+        <div class="field">
+          <label for="capText">Caption words <span class="hint">(one block · auto-times to your cut)</span></label>
+          <textarea id="capText" rows="3" spellcheck="false"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Animation</label>
+            <select id="capAnim">
+              <option value="karaoke">Karaoke</option>
+              <option value="pop">Word pop</option>
+              <option value="slide">Slide up</option>
+              <option value="fade">Crossfade</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Position</label>
+            <select id="capPos">
+              <option value="low">Lower third</option>
+              <option value="mid">Center</option>
+              <option value="high">Upper third</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Font size <output id="capSizeOut">96</output></label>
+            <input type="range" id="capSize" min="40" max="150" step="2" value="96">
+          </div>
+          <div class="field">
+            <label>Highlight</label>
+            <div class="swatches" id="capHiSwatches">
+              <button class="sw" style="--c:#ffe14d" data-c="#ffe14d" aria-label="Yellow"></button>
+              <button class="sw" style="--c:#57f2c6" data-c="#57f2c6" aria-label="Mint"></button>
+              <button class="sw" style="--c:#ff5d8f" data-c="#ff5d8f" aria-label="Pink"></button>
+              <button class="sw" style="--c:#8ab4ff" data-c="#8ab4ff" aria-label="Blue"></button>
+              <button class="sw" style="--c:#ff9f45" data-c="#ff9f45" aria-label="Orange"></button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Caption card <span class="hint">(hook title on top)</span></label>
+          <div class="switch-row"><span>Show caption card</span><label class="switch"><input type="checkbox" id="cardOn" checked><i></i></label></div>
+          <input type="text" id="cardText" maxlength="90" placeholder="Write a hook…">
+        </div>
+        <div class="field-row">
+          <label class="check"><input type="checkbox" id="capBg" checked> Word background</label>
+          <label class="check"><input type="checkbox" id="capStroke" checked> Outline</label>
+        </div>
+      </div>
+
+      <div class="panel-body" id="tabEffects" hidden>
+        <div class="panel-hint">Effects render live on the canvas — stack as many as you like.</div>
+        <div id="fxList" class="fx-list"></div>
+        <div class="field">
+          <label for="fxIntensity">Master intensity <output id="fxIntOut">60</output></label>
+          <input type="range" id="fxIntensity" min="0" max="100" value="60">
+        </div>
+      </div>
+
+      <div class="panel-body" id="tabStyle" hidden>
+        <div class="field">
+          <label>Look / grade</label>
+          <div class="look-grid" id="lookGrid"></div>
+        </div>
+        <div class="field">
+          <label for="zoomAmt">Punch-in zoom <output id="zoomOut">12</output></label>
+          <input type="range" id="zoomAmt" min="0" max="40" value="12">
+        </div>
+        <div class="field">
+          <label>Beat grid <output id="bpmOut">96 BPM</output></label>
+          <div class="beat-row" id="beatRow"></div>
+          <label class="check"><input type="checkbox" id="beatOn" checked> Pulse &amp; shake on beats</label>
+        </div>
+        <div class="field-row">
+          <label class="check"><input type="checkbox" id="safeOn"> Safe-area guides</label>
+          <label class="check"><input type="checkbox" id="letterbox"> Cinematic bars</label>
+        </div>
+      </div>
+
+      <div class="panel-body" id="tabExport" hidden>
+        <div class="export-summary" id="exportSummary"></div>
+
+        <div class="field">
+          <label>Resolution <span class="hint" id="resUpscaleHint">source 1080p · Lanczos upscale</span></label>
+          <div class="res-grid" id="resGrid">
+            <button class="res-card" data-preset="1080">
+              <b>1080p</b><small id="res1080">1080×1920</small>
+            </button>
+            <button class="res-card" data-preset="1440">
+              <b>1440p</b><small id="res1440">1440×2560</small>
+            </button>
+            <button class="res-card" data-preset="4k">
+              <b>4K</b><small id="res4k">2160×3840</small><em>UHD</em>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Frame rate</label>
+            <select id="expFps"><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option></select>
+          </div>
+          <div class="field">
+            <label>Encoder</label>
+            <select id="expQuality">
+              <option value="high">High (CRF 18)</option>
+              <option value="master">Master (CRF 14)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="switch-row">
+            <span>True 120 fps motion <span class="hint">(optical interpolation)</span></span>
+            <label class="switch"><input type="checkbox" id="smoothOn"><i></i></label>
+          </div>
+          <div class="panel-hint" id="smoothHint">Off = frames are duplicated. On = ffmpeg interpolates real in-between frames (slower).</div>
+        </div>
+
+        <button class="btn primary wide" id="doExport">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v11M8 10l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          Render MP4
+        </button>
+
+        <div class="render-progress" id="renderProgress" hidden>
+          <div class="rp-head"><span id="rpLabel">Rendering…</span><b id="rpPct">0%</b></div>
+          <div class="rp-bar"><i id="rpBar"></i></div>
+          <div class="rp-meta" id="rpMeta">queued</div>
+        </div>
+        <div class="export-log" id="exportLog" hidden></div>
+
+        <div class="render-result" id="renderResult" hidden>
+          <video id="resultVideo" controls playsinline muted></video>
+          <div class="rr-meta" id="rrMeta"></div>
+          <div class="rr-actions">
+            <a class="btn primary sm" id="downloadBtn" download>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v11M8 10l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              Download
+            </a>
+            <a class="btn ghost sm" id="openTabBtn" target="_blank" rel="noopener">Open</a>
+          </div>
+        </div>
+
+        <div class="panel-hint dim">Rendered for real by ffmpeg on the Shortify server — cover-crop, look, effect stack, letterbox and karaoke captions are all baked in. Runs up to 4K (2160×3840).</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="timeline-dock">
+    <div class="tl-head">
+      <div class="tl-title"><b id="cutLabel">Auto-cut 01</b><span id="cutMeta">—</span></div>
+      <div class="tl-tools">
+        <button class="btn ghost sm" id="btnMarkSplit" title="Split cut at playhead">Split</button>
+        <button class="btn ghost sm" id="btnTrimRight" title="Trim left edge to playhead">Trim L</button>
+        <button class="btn ghost sm" id="btnTrimEnd" title="Trim right edge to playhead">Trim R</button>
+        <button class="btn ghost sm" id="btnFull30" title="Reset cut to a 30s window">Reset cut</button>
+        <span class="tl-zoom">
+          <button class="zbtn" id="zoomOutBtn" aria-label="Zoom out">–</button>
+          <button class="zbtn" id="zoomInBtn" aria-label="Zoom in">+</button>
+        </span>
+      </div>
+    </div>
+    <div class="tl-viewport" id="tlViewport">
+      <div class="tl-inner" id="tlInner">
+        <div class="tl-ruler" id="tlRuler"></div>
+        <div class="tl-track tl-video" id="tlVideo">
+          <canvas id="filmstrip"></canvas>
+          <div class="cut-range" id="cutRange"><i class="handle hl"></i><i class="handle hr"></i></div>
+          <div class="moment-marks" id="momentMarks"></div>
+        </div>
+        <div class="tl-track tl-audio" id="tlAudio"><canvas id="waveCanvas"></canvas></div>
+        <div class="tl-track tl-captions" id="tlCaptions"></div>
+        <div class="playhead" id="playhead"><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+</main>
+
+</div>
+<div id="boot">Loading Shortify…</div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

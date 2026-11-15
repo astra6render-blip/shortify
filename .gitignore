@@ -1,0 +1,5 @@
+renders/*.mp4
+renders/.*.part.mp4
+renders/*.ass
+__pycache__/
+*.pyc

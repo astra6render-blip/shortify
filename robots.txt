@@ -1,0 +1,8 @@
+# Shortify — public site
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /renders/
+Disallow: /media/.sources/
+
+Sitemap: https://shortify.com/sitemap.xml

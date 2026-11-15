@@ -1,0 +1,5 @@
+# Shortify — server side
+# yt-dlp powers live YouTube metadata; ffmpeg does the real rendering.
+# Fallback ffmpeg binary (real ffmpeg is used when on PATH, e.g. Docker image):
+imageio-ffmpeg>=0.4.9
+yt-dlp>=2024.1.0
